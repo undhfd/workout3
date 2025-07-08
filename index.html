@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <title>우리팀 운동 현황</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { max-width: 500px; margin: 40px auto; text-align: center; font-family: sans-serif; }
+    h1 { color: #333; }
+    #status { margin-top: 30px; border: 1px solid #eee; padding: 10px; border-radius: 8px; text-align: left; }
+    .person { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #f0f0f0; }
+    .person:last-child { border-bottom: none; }
+    .name { font-size: 1.2em; font-weight: bold; }
+    .controls button { font-size: 1.2em; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #ccc; background-color: white; cursor: pointer; }
+    .count { font-size: 1.2em; margin: 0 15px; }
+    #copy-button { font-size: 1em; padding: 10px 20px; margin-top: 20px; border-radius: 5px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>우리팀 운동 현황 💪</h1>
+  <div id="status"><h2>데이터 불러오는 중...</h2></div>
+  <button id="copy-button" onclick="copyStatus()">현황 복사하기</button>
+
+  <script>
+    // 1단계에서 복사한 '마법 링크' 주소를 여기에 붙여넣으세요!
+    const API_URL = 'https://script.google.com/macros/s/AKfycby-odinzP1tpn03K4QNj6SHzGRvePZu2lEprhQIYkbyoPDSuPGfiSRSumDNZ5eBOJKH/exec';
+
+    // 현재 점수판을 불러오는 함수
+    async function getStatus() {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = '<h2>새로고침 중...</h2>';
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      let html = '';
+      data.forEach(row => {
+        const name = row[0];
+        const count = row[1];
+        html += `
+          <div class="person">
+            <span class="name">${name}</span>
+            <div class="controls">
+              <button onclick="recordWorkout('${name}', -1)">-</button>
+              <span class="count">${count}</span>
+              <button onclick="recordWorkout('${name}', 1)">+</button>
+            </div>
+          </div>
+        `;
+      });
+      statusDiv.innerHTML = html;
+    }
+
+    // 운동 기록을 요청하는 함수 (+1 또는 -1)
+    async function recordWorkout(name, value) {
+      // 버튼 비활성화 (중복 클릭 방지)
+      const buttons = document.querySelectorAll('.controls button');
+      buttons.forEach(btn => btn.disabled = true);
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body: JSON.stringify({ name: name, value: value }) // value도 함께 보냄
+      });
+      await getStatus(); // 기록 후 점수판 새로고침
+    }
+
+    // 현황을 텍스트로 복사하는 함수
+    function copyStatus() {
+      const statusDiv = document.getElementById('status');
+      let textToCopy = "🔥 우리팀 운동 현황 🔥\n";
+      statusDiv.querySelectorAll('.person').forEach(person => {
+        const name = person.querySelector('.name').textContent;
+        const count = person.querySelector('.count').textContent;
+        textToCopy += `${name}: ${count}회\n`;
+      });
+      
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('현황이 클립보드에 복사되었습니다!');
+      }).catch(err => {
+        console.error('복사 실패:', err);
+        alert('복사에 실패했습니다.');
+      });
+    }
+
+    // 페이지가 열리자마자 점수판을 불러옵니다.
+    getStatus();
+  </script>
+</body>
+</html>
